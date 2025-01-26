@@ -11,6 +11,7 @@ app.use(
 	morgan(':method :url :status :res[content-length] - :response-time ms :data')
 )
 app.use(cors())
+app.use(express.static('dist'))
 
 let phonebook = [
 	{
@@ -91,6 +92,8 @@ app.post('/api/persons', (req, res) => {
 			error: 'name must be unique'
 		})
 	}
+
+	phonebook.push(newPerson)
 
 	res.json(newPerson)
 })
