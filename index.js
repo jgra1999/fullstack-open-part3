@@ -16,7 +16,7 @@ app.use(express.static('dist'))
 let phonebook = [
 	{
 		id: 1,
-		name: 'Arto Hellas',
+		name: 'Artos Hellas',
 		number: '040-123456'
 	},
 	{
