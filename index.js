@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 const app = express()
 
@@ -36,20 +38,18 @@ let phonebook = [
 	}
 ]
 
-app.get('/api/persons', (req, res) => {
-	res.json(phonebook)
+app.get('/api/phonebook', (req, res) => {
+	Person.find({}).then((person) => {
+		res.json(person)
+	})
 })
 
-app.get('/api/persons/:id', (req, res) => {
-	const id = Number(req.params.id)
+app.get('/api/phonebook/:id', (req, res) => {
+	const id = req.params.id
 
-	const person = phonebook.find((person) => person.id === id)
-
-	if (person) {
+	Person.findById(id).then((person) => {
 		res.json(person)
-	} else {
-		res.status(404).end()
-	}
+	})
 })
 
 app.get('/info', (req, res) => {
@@ -68,10 +68,10 @@ app.get('/info', (req, res) => {
 	)
 })
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/phonebook', (req, res) => {
 	const { name, number } = req.body
 
-	const id = Math.floor(Math.random() * 100)
+	// const id = Math.floor(Math.random() * 100)
 
 	if (!name | !number) {
 		return res.status(400).json({
@@ -79,26 +79,27 @@ app.post('/api/persons', (req, res) => {
 		})
 	}
 
-	const newPerson = {
-		id,
+	const newPerson = new Person({
 		name,
 		number
-	}
+	})
 
-	const nameValidator = phonebook.find((person) => person.name === name)
+	newPerson.save().then((savedPerson) => {
+		res.json(savedPerson)
+	})
 
-	if (nameValidator) {
-		return res.status(400).json({
-			error: 'name must be unique'
-		})
-	}
+	// const nameValidator = phonebook.find((person) => person.name === name)
 
-	phonebook.push(newPerson)
+	// if (nameValidator) {
+	// 	return res.status(400).json({
+	// 		error: 'name must be unique'
+	// 	})
+	// }
 
-	res.json(newPerson)
+	// phonebook.push(newPerson)
 })
 
-app.delete('/api/persons/:id', (req, res) => {
+app.delete('/api/phonebook/:id', (req, res) => {
 	const id = Number(req.params.id)
 
 	phonebook = phonebook.filter((person) => person.id !== id)
