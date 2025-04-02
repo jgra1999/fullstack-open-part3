@@ -47,25 +47,40 @@ app.get('/api/phonebook', (req, res) => {
 app.get('/api/phonebook/:id', (req, res) => {
 	const id = req.params.id
 
-	Person.findById(id).then((person) => {
-		res.json(person)
-	})
+	Person.findById(id)
+		.then((person) => {
+			if (person) {
+				res.json(person)
+			} else {
+				res.status(404).end()
+			}
+		})
+		.catch((error) => {
+			console.log(error)
+			res.status(400).send({ error: 'malformatted id' })
+		})
 })
 
 app.get('/info', (req, res) => {
-	const personsAmount = phonebook.length
+	let phonebook = []
 
-	const requestDate = new Date()
+	Person.find({}).then((person) => {
+		phonebook = person
 
-	const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' }
-	const hourOptions = { hour: 'numeric', minute: 'numeric', second: 'numeric' }
+		const personsAmount = phonebook.length
 
-	const formattedDate = requestDate.toLocaleDateString('en-US', dateOptions)
-	const formattedHour = requestDate.toLocaleDateString('en-US', hourOptions)
+		const requestDate = new Date()
 
-	res.send(
-		`<p>Phonebook has info for ${personsAmount} persons</p> <p><strong>Date:</strong> ${formattedDate} <strong>Time:</strong> ${formattedHour} </p>`
-	)
+		const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' }
+		const hourOptions = { hour: 'numeric', minute: 'numeric', second: 'numeric' }
+
+		const formattedDate = requestDate.toLocaleDateString('en-US', dateOptions)
+		const formattedHour = requestDate.toLocaleDateString('en-US', hourOptions)
+
+		res.send(
+			`<p>Phonebook has info for ${personsAmount} persons</p> <p><strong>Date:</strong> ${formattedDate} <strong>Time:</strong> ${formattedHour} </p>`
+		)
+	})
 })
 
 app.post('/api/phonebook', (req, res) => {
@@ -99,13 +114,41 @@ app.post('/api/phonebook', (req, res) => {
 	// phonebook.push(newPerson)
 })
 
-app.delete('/api/phonebook/:id', (req, res) => {
-	const id = Number(req.params.id)
+app.put('/api/phonebook/:id', (req, res, next) => {
+	const body = req.body
 
-	phonebook = phonebook.filter((person) => person.id !== id)
-
-	res.status(204).end()
+	Person.findByIdAndUpdate(req.params.id, body, { new: true })
+		.then((updatedNumber) => {
+			res.json(updatedNumber)
+		})
+		.catch((error) => next(error))
 })
+
+app.delete('/api/phonebook/:id', (req, res) => {
+	Person.findByIdAndDelete(req.params.id)
+		.then(() => {
+			res.status(204).end()
+		})
+		.catch((error) => next(error))
+})
+
+const unknownEndpoint = (request, response) => {
+	response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+	console.error(error.message)
+
+	if (error.name === 'CastError') {
+		return response.status(400).send({ error: 'malformatted id' })
+	}
+
+	next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 
