@@ -83,7 +83,7 @@ app.get('/info', (req, res) => {
 	})
 })
 
-app.post('/api/phonebook', (req, res) => {
+app.post('/api/phonebook', (req, res, next) => {
 	const { name, number } = req.body
 
 	// const id = Math.floor(Math.random() * 100)
@@ -99,9 +99,12 @@ app.post('/api/phonebook', (req, res) => {
 		number
 	})
 
-	newPerson.save().then((savedPerson) => {
-		res.json(savedPerson)
-	})
+	newPerson
+		.save()
+		.then((savedPerson) => {
+			res.json(savedPerson)
+		})
+		.catch((error) => next(error))
 
 	// const nameValidator = phonebook.find((person) => person.name === name)
 
@@ -115,9 +118,9 @@ app.post('/api/phonebook', (req, res) => {
 })
 
 app.put('/api/phonebook/:id', (req, res, next) => {
-	const body = req.body
+	const options = { new: true, runValidators: true, context: 'query' }
 
-	Person.findByIdAndUpdate(req.params.id, body, { new: true })
+	Person.findByIdAndUpdate(req.params.id, req.body, options)
 		.then((updatedNumber) => {
 			res.json(updatedNumber)
 		})
@@ -136,18 +139,19 @@ const unknownEndpoint = (request, response) => {
 	response.status(404).send({ error: 'unknown endpoint' })
 }
 
-app.use(unknownEndpoint)
-
 const errorHandler = (error, request, response, next) => {
 	console.error(error.message)
 
 	if (error.name === 'CastError') {
 		return response.status(400).send({ error: 'malformatted id' })
+	} else if (error.name === 'ValidationError') {
+		return response.status(400).json({ error: error.message })
 	}
 
 	next(error)
 }
 
+app.use(unknownEndpoint)
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
